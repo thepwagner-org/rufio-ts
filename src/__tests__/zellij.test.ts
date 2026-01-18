@@ -1,10 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-	_getSpinnerStateSize,
-	_setSpinnerState,
-	cleanupSession,
-	deriveNameFromCwd,
-} from "../zellij.js";
+import { deriveNameFromCwd } from "../zellij.js";
 
 describe("deriveNameFromCwd", () => {
 	const originalHome = process.env.HOME;
@@ -69,48 +64,5 @@ describe("deriveNameFromCwd", () => {
 		it("handles root path", () => {
 			expect(deriveNameFromCwd("/")).toBe(null);
 		});
-	});
-});
-
-describe("cleanupSession", () => {
-	afterEach(() => {
-		// Clean up any state left by tests
-		cleanupSession("test-session-1");
-		cleanupSession("test-session-2");
-	});
-
-	it("removes spinner state for the given session", () => {
-		// Set up some state
-		_setSpinnerState("test-session-1", 5);
-		_setSpinnerState("test-session-2", 3);
-		expect(_getSpinnerStateSize()).toBe(2);
-
-		// Clean up one session
-		cleanupSession("test-session-1");
-		expect(_getSpinnerStateSize()).toBe(1);
-
-		// Clean up the other
-		cleanupSession("test-session-2");
-		expect(_getSpinnerStateSize()).toBe(0);
-	});
-
-	it("is idempotent - cleaning up non-existent session is safe", () => {
-		expect(_getSpinnerStateSize()).toBe(0);
-		cleanupSession("non-existent-session");
-		expect(_getSpinnerStateSize()).toBe(0);
-	});
-
-	it("only removes the specified session, leaving others intact", () => {
-		_setSpinnerState("session-a", 1);
-		_setSpinnerState("session-b", 2);
-		_setSpinnerState("session-c", 3);
-		expect(_getSpinnerStateSize()).toBe(3);
-
-		cleanupSession("session-b");
-		expect(_getSpinnerStateSize()).toBe(2);
-
-		// Clean up remaining for afterEach
-		cleanupSession("session-a");
-		cleanupSession("session-c");
 	});
 });

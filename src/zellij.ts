@@ -3,6 +3,11 @@ import type { PluginInput } from "@opencode-ai/plugin";
 /** Shell function type from plugin input */
 export type BunShell = PluginInput["$"];
 
+/** Format an error for logging */
+function formatError(e: unknown): string {
+	return e instanceof Error ? e.message : String(e);
+}
+
 export type ZellijState = "active" | "stopped" | "asking";
 
 // Braille spinner frames (10-frame cycle)
@@ -32,16 +37,6 @@ function resetSpinner(sessionID: string): void {
  */
 export function cleanupSession(sessionID: string): void {
 	spinnerState.delete(sessionID);
-}
-
-/** @internal Exported for testing only */
-export function _getSpinnerStateSize(): number {
-	return spinnerState.size;
-}
-
-/** @internal Exported for testing only */
-export function _setSpinnerState(sessionID: string, index: number): void {
-	spinnerState.set(sessionID, index);
 }
 
 /**
@@ -148,6 +143,6 @@ export async function updateZellijTab(
 		// Broadcast to all sessions - the plugin will only rename tabs matching the suffix
 		await $`zellij pipe --name rename-tab -- ${payload}`.quiet();
 	} catch (e) {
-		await log?.(`zellij: error: ${e instanceof Error ? e.message : String(e)}`);
+		await log?.(`zellij: error: ${formatError(e)}`);
 	}
 }

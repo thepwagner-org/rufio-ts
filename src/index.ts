@@ -39,6 +39,11 @@ const lastSpinnerUpdate = new Map<string, number>();
 /** Minimum interval between spinner updates in milliseconds */
 const SPINNER_THROTTLE_MS = 100;
 
+/** Format an error for logging */
+function formatError(e: unknown): string {
+	return e instanceof Error ? e.message : String(e);
+}
+
 /** Checks if a tool name represents a question/prompt tool */
 function isQuestionTool(tool: string): boolean {
 	return (
@@ -70,7 +75,7 @@ async function getSessionDirectory(
 		}
 	} catch (e) {
 		await log?.(
-			`getSessionDirectory: sessionID=${sessionID} error=${e instanceof Error ? e.message : String(e)} fallback=${fallback}`,
+			`getSessionDirectory: sessionID=${sessionID} error=${formatError(e)} fallback=${fallback}`,
 		);
 	}
 	return fallback;
