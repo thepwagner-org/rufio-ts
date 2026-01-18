@@ -112,100 +112,73 @@ checks:
 		expect(() => loadConfig(configPath)).toThrow("no checks defined");
 	});
 
-	it("resolves a preset to its checks", () => {
-		const configPath = path.join(tmpDir, "rufio-hooks.yaml");
+	it("resolves a preset from XDG config directory", () => {
+		// Set up mock XDG preset directory
+		const xdgConfigHome = path.join(tmpDir, "xdg-config");
+		const presetDir = path.join(xdgConfigHome, "rufio", "presets");
+		fs.mkdirSync(presetDir, { recursive: true });
 		fs.writeFileSync(
-			configPath,
+			path.join(presetDir, "meow.yaml"),
 			`
-presets:
-  - meow
-`,
-		);
-
-		const config = loadConfig(configPath);
-		expect(config.checks).toHaveLength(1);
-		expect(config.checks[0].name).toBe("meow-fmt");
-		expect(config.checks[0].when.paths_changed).toBe("**/*.md");
-	});
-
-	it("resolves multiple presets", () => {
-		const configPath = path.join(tmpDir, "rufio-hooks.yaml");
-		fs.writeFileSync(
-			configPath,
-			`
-presets:
-  - meow
-  - cargo
-`,
-		);
-
-		const config = loadConfig(configPath);
-		// meow: 1 check, cargo: 2 checks
-		expect(config.checks).toHaveLength(3);
-		expect(config.checks[0].name).toBe("meow-fmt");
-		expect(config.checks[1].name).toBe("cargo-checks");
-		expect(config.checks[2].name).toBe("cargo-version-bump");
-	});
-
-	it("merges presets with custom checks (presets first)", () => {
-		const configPath = path.join(tmpDir, "rufio-hooks.yaml");
-		fs.writeFileSync(
-			configPath,
-			`
-presets:
-  - meow
 checks:
-  - name: custom
+  - name: meow-fmt
     when:
-      paths_changed: "**/*.sql"
+      paths_changed: "**/*.md"
     then:
       ensure_commands:
-        - sqlfluff lint
+        - meow fmt
 `,
 		);
 
-		const config = loadConfig(configPath);
-		expect(config.checks).toHaveLength(2);
-		expect(config.checks[0].name).toBe("meow-fmt");
-		expect(config.checks[1].name).toBe("custom");
+		const originalXdg = process.env.XDG_CONFIG_HOME;
+		process.env.XDG_CONFIG_HOME = xdgConfigHome;
+
+		try {
+			const configPath = path.join(tmpDir, "rufio-hooks.yaml");
+			fs.writeFileSync(
+				configPath,
+				`
+presets:
+  - meow
+`,
+			);
+
+			const config = loadConfig(configPath);
+			expect(config.checks).toHaveLength(1);
+			expect(config.checks[0].name).toBe("meow-fmt");
+			expect(config.checks[0].when.paths_changed).toBe("**/*.md");
+		} finally {
+			process.env.XDG_CONFIG_HOME = originalXdg;
+		}
 	});
 
-	it("throws on unknown preset", () => {
-		const configPath = path.join(tmpDir, "rufio-hooks.yaml");
-		fs.writeFileSync(
-			configPath,
-			`
+	it("throws when preset not found in XDG directory", () => {
+		// Set up empty XDG config directory
+		const xdgConfigHome = path.join(tmpDir, "xdg-config");
+		fs.mkdirSync(xdgConfigHome, { recursive: true });
+
+		const originalXdg = process.env.XDG_CONFIG_HOME;
+		process.env.XDG_CONFIG_HOME = xdgConfigHome;
+
+		try {
+			const configPath = path.join(tmpDir, "rufio-hooks.yaml");
+			fs.writeFileSync(
+				configPath,
+				`
 presets:
   - nonexistent
 `,
-		);
+			);
 
-		expect(() => loadConfig(configPath)).toThrow(
-			"unknown preset 'nonexistent'",
-		);
-		expect(() => loadConfig(configPath)).toThrow("Available:");
-	});
-
-	it("allows preset-only config without checks array", () => {
-		const configPath = path.join(tmpDir, "rufio-hooks.yaml");
-		fs.writeFileSync(
-			configPath,
-			`
-presets:
-  - pnpm
-`,
-		);
-
-		const config = loadConfig(configPath);
-		expect(config.checks).toHaveLength(2);
-		expect(config.checks[0].name).toBe("pnpm-checks");
-		expect(config.checks[0].then.ensure_commands).toEqual([
-			"pnpm lint",
-			"pnpm typecheck",
-			"pnpm test",
-		]);
-		expect(config.checks[1].name).toBe("pnpm-version-bump");
-		expect(config.checks[1].then.ensure_changed).toEqual(["version.toml"]);
+			expect(() => loadConfig(configPath)).toThrow(
+				"preset 'nonexistent' not found",
+			);
+			expect(() => loadConfig(configPath)).toThrow(
+				"rufio/presets/nonexistent.yaml",
+			);
+		} finally {
+			process.env.XDG_CONFIG_HOME = originalXdg;
+		}
 	});
 });
 

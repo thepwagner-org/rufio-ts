@@ -1,9 +1,11 @@
 {pkgs, ...}:
-pkgs.mkShell {
+with pkgs;
+mkShell {
   buildInputs = [
-    pkgs.nodejs
-    pkgs.pnpm
-    pkgs.typescript
-    pkgs.typescript-language-server
+    biome
+    nodejs
+    pnpm
+    typescript
+    typescript-language-server
   ];
 }

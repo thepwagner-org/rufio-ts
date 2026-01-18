@@ -2,7 +2,6 @@ import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { parse } from "yaml";
-import { PRESETS } from "./presets.js";
 
 /**
  * Conditions that trigger a check
@@ -95,24 +94,21 @@ function loadXdgPreset(name: string): Check[] | null {
 
 /**
  * Resolves preset names to their check definitions.
- * Checks XDG config directory first, then falls back to built-in presets.
+ * Loads presets from XDG config directory ($XDG_CONFIG_HOME/rufio/presets/{name}.yaml).
  */
 function resolvePresets(presetNames: string[], configPath: string): Check[] {
 	const checks: Check[] = [];
 	for (const name of presetNames) {
-		// Try XDG preset first
-		const xdgPreset = loadXdgPreset(name);
-		if (xdgPreset) {
-			checks.push(...xdgPreset);
-			continue;
-		}
-
-		// Fall back to built-in preset
-		const preset = PRESETS[name];
+		const preset = loadXdgPreset(name);
 		if (!preset) {
-			const available = Object.keys(PRESETS).join(", ");
+			const presetPath = join(
+				getXdgConfigHome(),
+				"rufio",
+				"presets",
+				`${name}.yaml`,
+			);
 			throw new Error(
-				`Invalid config at ${configPath}: unknown preset '${name}'. Available: ${available}`,
+				`Invalid config at ${configPath}: preset '${name}' not found at ${presetPath}`,
 			);
 		}
 		checks.push(...preset);

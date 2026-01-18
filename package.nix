@@ -9,14 +9,7 @@ buildPnpmPackage {
 
   installPhase = ''
     runHook preInstall
-
-    # Install the bundled plugin
     install -Dm644 dist/plugin.js $out/plugin.js
-
-    # Optionally install types and other dist files
-    mkdir -p $out/share/rufio-ts
-    cp -r dist/* $out/share/rufio-ts/
-
     runHook postInstall
   '';
 
