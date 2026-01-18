@@ -28,6 +28,23 @@ function resetSpinner(sessionID: string): void {
 }
 
 /**
+ * Cleans up all state for a session (call on session.deleted)
+ */
+export function cleanupSession(sessionID: string): void {
+	spinnerState.delete(sessionID);
+}
+
+/** @internal Exported for testing only */
+export function _getSpinnerStateSize(): number {
+	return spinnerState.size;
+}
+
+/** @internal Exported for testing only */
+export function _setSpinnerState(sessionID: string, index: number): void {
+	spinnerState.set(sessionID, index);
+}
+
+/**
  * Derives a short name from the current working directory.
  *
  * Rules:
@@ -131,6 +148,6 @@ export async function updateZellijTab(
 		// Broadcast to all sessions - the plugin will only rename tabs matching the suffix
 		await $`zellij pipe --name rename-tab -- ${payload}`.quiet();
 	} catch (e) {
-		await log?.(`zellij: error: ${e}`);
+		await log?.(`zellij: error: ${e instanceof Error ? e.message : String(e)}`);
 	}
 }

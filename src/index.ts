@@ -1,17 +1,22 @@
-// CI trigger 2
 import type { Plugin, PluginInput } from "@opencode-ai/plugin";
 import type {
 	Event,
 	EventMessagePartUpdated,
 	EventPermissionReplied,
 	EventPermissionUpdated,
+	EventSessionDeleted,
 	EventSessionIdle,
 	EventSessionStatus,
 } from "@opencode-ai/sdk";
 
 import { runChecks } from "./checks/runner.js";
 import { extractToolEvents, type MessageWithParts } from "./transcript.js";
-import { type BunShell, updateZellijTab, type ZellijState } from "./zellij.js";
+import {
+	type BunShell,
+	cleanupSession,
+	updateZellijTab,
+	type ZellijState,
+} from "./zellij.js";
 
 /**
  * State management for tracking "asking" state across events.
@@ -65,7 +70,7 @@ async function getSessionDirectory(
 		}
 	} catch (e) {
 		await log?.(
-			`getSessionDirectory: sessionID=${sessionID} error=${e} fallback=${fallback}`,
+			`getSessionDirectory: sessionID=${sessionID} error=${e instanceof Error ? e.message : String(e)} fallback=${fallback}`,
 		);
 	}
 	return fallback;
@@ -128,26 +133,6 @@ async function runStopChecks(
 
 	const messages = messagesResult.data as MessageWithParts[];
 	const toolEvents = extractToolEvents(messages);
-	const editEvents = toolEvents.filter(
-		(e) => e.toolName === "Edit" || e.toolName === "Write",
-	);
-	const bashEvents = toolEvents.filter((e) => e.toolName === "Bash");
-	await client.app.log({
-		body: {
-			service: "rufio",
-			level: "info",
-			message: `toolEvents count: ${toolEvents.length}, edits: ${JSON.stringify(editEvents.slice(-5).map((e) => e.filePath))}, bash: ${JSON.stringify(bashEvents.slice(-5).map((e) => e.command))}`,
-		},
-	});
-	// Debug: log all tool names to see what we're getting
-	const allToolNames = toolEvents.map((e) => e.toolName);
-	await client.app.log({
-		body: {
-			service: "rufio",
-			level: "info",
-			message: `all tool names: ${JSON.stringify(allToolNames)}`,
-		},
-	});
 
 	// Run checks from rufio.yaml configs
 	const checkError = runChecks(changedFiles, toolEvents, cwd);
@@ -326,6 +311,18 @@ export const RufioPlugin: Plugin = async ({ client, $, directory }) => {
 						log,
 					);
 					await updateZellijTab($, "active", sessionDir, sessionID, log);
+					break;
+				}
+
+				case "session.deleted": {
+					const e = event as EventSessionDeleted;
+					const sessionID = e.properties.info.id;
+
+					// Clean up all session state
+					askingState.delete(sessionID);
+					sessionDirectories.delete(sessionID);
+					lastSpinnerUpdate.delete(sessionID);
+					cleanupSession(sessionID);
 					break;
 				}
 			}

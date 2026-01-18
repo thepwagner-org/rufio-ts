@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, resolve } from "node:path";
 import { minimatch } from "minimatch";
 import type { Check, LoadedConfig } from "../config.js";
 import { groupFilesByConfig } from "../config.js";
@@ -9,7 +9,7 @@ import { findLastEditIndex, wasCommandRunAfter } from "../transcript.js";
 /**
  * Result of running checks
  */
-export interface CheckResult {
+interface CheckResult {
 	/** Error message if check failed, null if passed */
 	error: string | null;
 	/** Name of the check that failed (if any) */
@@ -181,15 +181,12 @@ function checkEnsureChanged(
 		.filter(Boolean) as string[];
 
 	for (const requiredPath of paths) {
-		const absoluteRequired = join(configDir, requiredPath);
+		const absoluteRequired = resolve(configDir, requiredPath);
 
 		for (const editedPath of editedPaths) {
-			// Compare paths (handle both absolute and relative)
-			if (
-				editedPath === absoluteRequired ||
-				editedPath === requiredPath ||
-				editedPath.endsWith(`/${requiredPath}`)
-			) {
+			// Normalize paths for comparison
+			const normalizedEdited = resolve(editedPath);
+			if (normalizedEdited === absoluteRequired) {
 				return { error: null };
 			}
 		}

@@ -83,9 +83,9 @@ function extractToolEvent(part: ToolPart, index: number): ToolEvent | null {
 		};
 	}
 
-	// Return generic event for other tools
+	// Return generic event for other tools (capitalize for consistency with known tools)
 	return {
-		toolName,
+		toolName: toolName.charAt(0).toUpperCase() + toolName.slice(1),
 		index,
 	};
 }

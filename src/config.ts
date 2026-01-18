@@ -6,7 +6,7 @@ import { parse } from "yaml";
 /**
  * Conditions that trigger a check
  */
-export interface When {
+interface When {
 	/** Glob pattern for files that trigger this check (relative to config dir) */
 	paths_changed: string;
 	/** Optional: check only applies if this path exists (relative to config dir) */
@@ -16,7 +16,7 @@ export interface When {
 /**
  * Actions required when check triggers - mutually exclusive
  */
-export interface Then {
+interface Then {
 	/** Commands that must ALL run after the last matching edit */
 	ensure_commands?: string[];
 	/** At least one of these paths must have been edited this session */
@@ -38,7 +38,7 @@ export interface Check {
 /**
  * Raw configuration structure (as parsed from YAML)
  */
-export interface RufioConfigRaw {
+interface RufioConfigRaw {
 	/** Built-in preset names to include */
 	presets?: string[];
 	/** Custom check definitions */
