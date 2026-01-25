@@ -5,7 +5,7 @@
 }:
 buildPnpmPackage {
   src = ./.;
-  pnpmDepsHash = "sha256-FuNoLCU+32HgtA/19rf8nJysiG76uIiIRsJIblnrRA4=";
+  pnpmDepsHash = "sha256-FCsH+L0/nm62ccZiyy8H4q5xnYss3d70YbJlv1V+lzg=";
 
   installPhase = ''
     runHook preInstall

@@ -12,7 +12,7 @@
 		}
 	},
 	"scripts": {
-		"build": "tsc && esbuild dist/index.js --bundle --platform=node --format=esm --outfile=dist/plugin.js --external:@opencode-ai/*",
+		"build": "tsc && ncc build dist/index.js -o dist/bundle -m -e @opencode-ai/plugin -e @opencode-ai/sdk && mv dist/bundle/index.js dist/plugin.js && rm -rf dist/bundle",
 		"dev": "tsc --watch",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
@@ -32,7 +32,7 @@
 		"@opencode-ai/plugin": "^1.1.12",
 		"@opencode-ai/sdk": "^1.1.12",
 		"@types/node": "^25.0.5",
-		"esbuild": "^0.27.2",
+		"@vercel/ncc": "^0.38.3",
 		"typescript": "^5.9.3",
 		"vitest": "^4.0.16"
 	},
