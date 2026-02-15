@@ -9,7 +9,6 @@ pnpm build
 mkdir -p ~/.config/opencode/plugin
 ln -s /path/to/rufio-ts/dist/plugin.js ~/.config/opencode/plugin/rufio.js
 ```
-When running in Zellij, the plugin also updates tab names with status indicators.
 
 ## Configuration
 
