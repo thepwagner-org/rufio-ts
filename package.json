@@ -32,12 +32,16 @@
 		"@opencode-ai/plugin": "^1.1.12",
 		"@opencode-ai/sdk": "^1.1.12",
 		"@types/node": "^25.0.5",
-
 		"typescript": "^5.9.3",
-		"vitest": "^4.0.16"
+		"vitest": "^4.0.18"
 	},
 	"dependencies": {
 		"minimatch": "^10.2.1",
 		"yaml": "^2.8.2"
+	},
+	"pnpm": {
+		"overrides": {
+			"rollup": ">=4.59.0"
+		}
 	}
 }
