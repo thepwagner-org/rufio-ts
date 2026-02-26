@@ -5,7 +5,9 @@
 }:
 buildPnpmPackage {
   src = ./.;
-  pnpmDepsHash = "sha256-FCsH+L0/nm62ccZiyy8H4q5xnYss3d70YbJlv1V+lzg=";
+  pnpmDepsHash = "sha256-WG+hcnG+KJtaQjlgLXLzPSWI4IWowsts7pzjr0b9kg0=";
+
+  extraNativeBuildInputs = [ pkgs.esbuild ];
 
   installPhase = ''
     runHook preInstall

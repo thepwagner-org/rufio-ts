@@ -12,7 +12,7 @@
 		}
 	},
 	"scripts": {
-		"build": "tsc && ncc build dist/index.js -o dist/bundle -m -e @opencode-ai/plugin -e @opencode-ai/sdk && mv dist/bundle/index.js dist/plugin.js && rm -rf dist/bundle",
+		"build": "node build.mjs",
 		"dev": "tsc --watch",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
@@ -32,12 +32,12 @@
 		"@opencode-ai/plugin": "^1.1.12",
 		"@opencode-ai/sdk": "^1.1.12",
 		"@types/node": "^25.0.5",
-		"@vercel/ncc": "^0.38.3",
+
 		"typescript": "^5.9.3",
 		"vitest": "^4.0.16"
 	},
 	"dependencies": {
-		"minimatch": "^10.2.0",
+		"minimatch": "^10.2.1",
 		"yaml": "^2.8.2"
 	}
 }

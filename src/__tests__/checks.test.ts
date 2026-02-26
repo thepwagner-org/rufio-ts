@@ -480,16 +480,13 @@ checks:
 `,
 		);
 
-		const events: ToolEvent[] = [
-			{ toolName: "Edit", filePath: path.join(tmpDir, "main.rs"), index: 0 },
-		];
-
-		const result = runChecks(["main.rs"], events, tmpDir);
+		// version.toml not in changedFiles (git status) → check fails
+		const result = runChecks(["main.rs"], [], tmpDir);
 		expect(result).toContain("Check 'version-bump' failed");
 		expect(result).toContain("version.toml");
 	});
 
-	it("passes when ensure_changed file was edited", () => {
+	it("passes when ensure_changed file is dirty in git status", () => {
 		fs.writeFileSync(path.join(tmpDir, "package.nix"), "");
 		fs.writeFileSync(
 			path.join(tmpDir, "rufio-hooks.yaml"),
@@ -505,6 +502,30 @@ checks:
 `,
 		);
 
+		// version.toml is in changedFiles (git status) → check passes
+		// No transcript events needed for ensure_changed
+		const result = runChecks(["main.rs", "version.toml"], [], tmpDir);
+		expect(result).toBeNull();
+	});
+
+	it("fails ensure_changed when file was edited but then committed", () => {
+		fs.writeFileSync(path.join(tmpDir, "package.nix"), "");
+		fs.writeFileSync(
+			path.join(tmpDir, "rufio-hooks.yaml"),
+			`
+checks:
+  - name: version-bump
+    when:
+      paths_changed: "**/*.rs"
+      path_exists: package.nix
+    then:
+      ensure_changed:
+        - version.toml
+`,
+		);
+
+		// version.toml was edited in the transcript but has since been committed,
+		// so it no longer appears in changedFiles (git status)
 		const events: ToolEvent[] = [
 			{ toolName: "Edit", filePath: path.join(tmpDir, "main.rs"), index: 0 },
 			{
@@ -514,8 +535,10 @@ checks:
 			},
 		];
 
-		const result = runChecks(["main.rs", "version.toml"], events, tmpDir);
-		expect(result).toBeNull();
+		// Only main.rs is dirty — version.toml was committed
+		const result = runChecks(["main.rs"], events, tmpDir);
+		expect(result).toContain("Check 'version-bump' failed");
+		expect(result).toContain("version.toml");
 	});
 
 	it("handles nested configs correctly", () => {

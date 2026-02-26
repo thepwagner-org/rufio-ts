@@ -3,6 +3,7 @@ with pkgs;
   mkShell {
     buildInputs = [
       biome
+      esbuild
       nodejs
       pnpm
       typescript

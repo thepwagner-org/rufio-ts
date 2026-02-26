@@ -28,13 +28,21 @@ export function runChecks(
 	changedFiles: string[],
 	toolEvents: ToolEvent[],
 	repoRoot: string,
+	debug?: (msg: string) => void,
 ): string | null {
 	// Group files by their nearest config
 	const groups = groupFilesByConfig(changedFiles, repoRoot);
 
+	debug?.(
+		`runChecks: ${groups.size} config group(s), ${toolEvents.length} toolEvents`,
+	);
+	for (const [configPath, { files }] of groups.entries()) {
+		debug?.(`  config=${configPath} files=${JSON.stringify(files)}`);
+	}
+
 	// Process each config
 	for (const { loaded, files } of groups.values()) {
-		const result = runConfigChecks(loaded, files, toolEvents, repoRoot);
+		const result = runConfigChecks(loaded, files, toolEvents, repoRoot, debug);
 		if (result.error) {
 			return result.error;
 		}
@@ -51,6 +59,7 @@ function runConfigChecks(
 	changedFiles: string[],
 	toolEvents: ToolEvent[],
 	repoRoot: string,
+	debug?: (msg: string) => void,
 ): CheckResult {
 	for (const check of loaded.config.checks) {
 		const result = runSingleCheck(
@@ -59,6 +68,7 @@ function runConfigChecks(
 			changedFiles,
 			toolEvents,
 			repoRoot,
+			debug,
 		);
 		if (result.error) {
 			return result;
@@ -77,6 +87,7 @@ function runSingleCheck(
 	changedFiles: string[],
 	toolEvents: ToolEvent[],
 	repoRoot: string,
+	debug?: (msg: string) => void,
 ): CheckResult {
 	const { configDir } = loaded;
 
@@ -103,11 +114,22 @@ function runSingleCheck(
 		return minimatch(relativeToConfig, check.when.paths_changed);
 	});
 
+	debug?.(
+		`  check=${check.name} matchingFiles=${JSON.stringify(matchingFiles)}`,
+	);
+
 	if (matchingFiles.length === 0) {
 		// No matching files, check doesn't apply
 		return { error: null };
 	}
 
+	// For ensure_changed: purely git-status-based. If dirty files match the glob,
+	// the ensure_changed files must also be dirty. No transcript needed.
+	if (check.then.ensure_changed) {
+		return checkEnsureChanged(check, changedFiles, repoRoot, configDir, debug);
+	}
+
+	// For ensure_commands: transcript-based. Commands must run after the last edit.
 	// Create a matcher for the glob pattern
 	const globMatcher = (path: string): boolean => {
 		// Path from tool events might be absolute
@@ -121,18 +143,17 @@ function runSingleCheck(
 	// Find the last edit to a matching file
 	const lastEditIndex = findLastEditIndex(toolEvents, globMatcher);
 
+	debug?.(
+		`  check=${check.name} lastEditIndex=${lastEditIndex} toolEventPaths=${JSON.stringify(toolEvents.filter((e) => e.toolName === "Edit" || e.toolName === "Write").map((e) => e.filePath))}`,
+	);
+
 	// If no matching file was edited in this session, skip the check
 	if (lastEditIndex === -1) {
 		return { error: null };
 	}
 
-	// Run the appropriate check based on 'then' type
 	if (check.then.ensure_commands) {
 		return checkCommands(check, toolEvents, lastEditIndex);
-	}
-
-	if (check.then.ensure_changed) {
-		return checkEnsureChanged(check, toolEvents, configDir);
 	}
 
 	return { error: null };
@@ -165,32 +186,37 @@ function checkCommands(
 }
 
 /**
- * Checks that at least one of the specified paths was edited this session.
+ * Checks that at least one of the specified paths appears in git status (is dirty).
+ * This is commit-aware: if the file was edited earlier in the session but then committed,
+ * it won't appear in changedFiles and the check will fail again.
  */
 function checkEnsureChanged(
 	check: Check,
-	toolEvents: ToolEvent[],
+	changedFiles: string[],
+	repoRoot: string,
 	configDir: string,
+	debug?: (msg: string) => void,
 ): CheckResult {
 	const paths = check.then.ensure_changed ?? [];
 
-	// Check if any of the required paths were edited
-	const editedPaths = toolEvents
-		.filter((e) => e.toolName === "Edit" || e.toolName === "Write")
-		.map((e) => e.filePath)
-		.filter(Boolean) as string[];
+	// Build set of absolute paths for all dirty files from git status
+	const dirtyAbsolute = new Set(
+		changedFiles.map((f) => resolve(join(repoRoot, f))),
+	);
 
 	for (const requiredPath of paths) {
 		const absoluteRequired = resolve(configDir, requiredPath);
-
-		for (const editedPath of editedPaths) {
-			// Normalize paths for comparison
-			const normalizedEdited = resolve(editedPath);
-			if (normalizedEdited === absoluteRequired) {
-				return { error: null };
-			}
+		if (dirtyAbsolute.has(absoluteRequired)) {
+			debug?.(
+				`  check=${check.name} ensure_changed: ${requiredPath} is dirty in git status`,
+			);
+			return { error: null };
 		}
 	}
+
+	debug?.(
+		`  check=${check.name} ensure_changed: none of [${paths.join(", ")}] found in changedFiles`,
+	);
 
 	const error = `Check '${check.name}' failed: one of these files must be changed when editing ${check.when.paths_changed}: ${paths.join(", ")}`;
 	return { error, checkName: check.name };
