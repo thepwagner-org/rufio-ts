@@ -13,6 +13,7 @@ ln -s /path/to/rufio-ts/dist/plugin.js ~/.config/opencode/plugin/rufio.js
 ## Configuration
 
 Create a `rufio-hooks.yaml` in your project root:
+
 ```yaml
 checks:
   - name: my-check
@@ -26,12 +27,14 @@ checks:
       ensure_changed:               # files that must have changed
         - version.toml
 ```
+
 - `ensure_commands`: verifies these commands ran (in any order) after the matching files changed
 - `ensure_changed`: verifies these files were also modified in the session
 
 ### Presets
 
 Presets are reusable check collections stored at `$XDG_CONFIG_HOME/rufio/presets/{name}.yaml`:
+
 ```yaml
 # ~/.config/rufio/presets/pnpm.yaml
 checks:
@@ -44,7 +47,9 @@ checks:
         - pnpm typecheck
         - pnpm test
 ```
+
 Reference presets in your project config:
+
 ```yaml
 presets:
   - pnpm
