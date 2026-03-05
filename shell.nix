@@ -5,7 +5,7 @@ with pkgs;
       biome
       esbuild
       nodejs
-      pnpm
+      pnpm_10
       typescript
       typescript-language-server
     ];
