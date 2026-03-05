@@ -27,7 +27,6 @@
 	],
 	"author": "",
 	"license": "MIT",
-	"packageManager": "pnpm@10.26.1",
 	"devDependencies": {
 		"@opencode-ai/plugin": "^1.1.12",
 		"@opencode-ai/sdk": "^1.1.12",
