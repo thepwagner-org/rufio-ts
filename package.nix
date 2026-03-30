@@ -5,7 +5,7 @@
 }:
 buildPnpmPackage {
   src = ./.;
-  pnpmDepsHash = "sha256-zupLkk5CTDKSojlBR12uofKMjuhjPIyHKxqtjnYxAy0=";
+  pnpmDepsHash = "sha256-6J6muuXxpWVDhCxpGmGT0Nt2YWYS+869MGgPQtzd5ns=";
 
   extraNativeBuildInputs = [ pkgs.esbuild ];
 
